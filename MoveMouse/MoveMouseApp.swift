@@ -205,6 +205,8 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .top)
+            .padding(12)
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 10))
         }
         .padding(12).frame(width: 390)
         .environment(\.locale, Locale(identifier: s.languageCode)).fixedSize(horizontal: false, vertical: true)
@@ -220,6 +222,8 @@ struct ContentView: View {
             }
             Image("Rat").resizable().scaledToFit().frame(width: 200, height: 200)
                 .foregroundStyle(s.enabled ? Color.accentColor : Color.secondary)
+                .shadow(color: s.enabled ? .black.opacity(0.8) : .clear, radius: 14)
+                .animation(.easeInOut(duration: 0.3), value: s.enabled)
                 .padding(.vertical, 10).frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
                 .onTapGesture { s.enabled.toggle() }
@@ -293,6 +297,33 @@ struct ContentView: View {
     }
 }
 
+// MenuBarExtra has no right-click support, so a local monitor catches clicks on its status item.
+final class ContextMenuController: NSObject {
+    private let settings: Settings
+    private var monitor: Any?
+
+    init(_ s: Settings) {
+        settings = s
+        super.init()
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
+            guard let self, let w = event.window, w.className.contains("StatusBar"), let view = w.contentView else { return event }
+            let menu = NSMenu()
+            let toggle = NSMenuItem(title: self.settings.tr(self.settings.enabled ? "Disable" : "Enable"), action: #selector(self.toggle), keyEquivalent: "")
+            toggle.target = self
+            let quit = NSMenuItem(title: self.settings.tr("Quit"), action: #selector(self.quit), keyEquivalent: "")
+            quit.target = self
+            menu.addItem(toggle)
+            menu.addItem(.separator())
+            menu.addItem(quit)
+            NSMenu.popUpContextMenu(menu, with: event, for: view)
+            return nil
+        }
+    }
+
+    @objc private func toggle() { settings.enabled.toggle() }
+    @objc private func quit() { NSApp.terminate(nil) }
+}
+
 struct MenuIcon: View {
     let enabled: Bool
     let running: Bool
@@ -311,11 +342,13 @@ struct MenuIcon: View {
 struct MoveMouseApp: App {
     @StateObject private var settings: Settings
     @StateObject private var mover: Mover
+    private let contextMenu: ContextMenuController
 
     init() {
         let s = Settings()
         _settings = StateObject(wrappedValue: s)
         _mover = StateObject(wrappedValue: Mover(s))
+        contextMenu = ContextMenuController(s)
     }
 
     var body: some Scene {
