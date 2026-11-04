@@ -40,6 +40,16 @@ The app is produced at `build/Build/Products/Release/MoveMouse.app`. Set your ow
 
 Project configuration lives in `project.yml`; after changing it, regenerate the project with `xcodegen generate`.
 
+## Distribution
+
+```sh
+./scripts/make-dmg.sh
+```
+
+Builds a universal (Apple Silicon + Intel) app and creates `build/MoveMouse.dmg` containing the app and an `Applications` shortcut, so users install it by dragging the app onto it. The mounted volume uses the app icon as well.
+
+The app is ad-hoc signed, so Gatekeeper blocks it on other Macs at first launch: right-click the app → *Open* (or allow it in *System Settings → Privacy & Security*). To avoid this, sign with a Developer ID certificate and notarize the DMG (requires a paid Apple Developer account).
+
 ## Permissions
 
 Moving the cursor requires the **Accessibility** permission: *System Settings → Privacy & Security → Accessibility*. The app prompts for it from its menu.
@@ -49,6 +59,8 @@ For launch at login, copy the app to `/Applications` first.
 ## Project layout
 
 - `MoveMouse/MoveMouseApp.swift` – the entire app
-- `MoveMouse/Assets.xcassets` – rat icon (SVG)
+- `MoveMouse/Assets.xcassets` – app icon (`AppIcon.appiconset`) and rat SVG
+- `scripts/make-dmg.sh` – builds the distributable DMG
+- `scripts/render-icon.swift` – renders the app icon PNGs from the SVG
 - `project.yml` – XcodeGen project definition
 - `docs/icon.png` – gray icon used in this README
