@@ -64,3 +64,7 @@ For launch at login, copy the app to `/Applications` first.
 - `scripts/render-icon.swift` – renders the app icon PNGs from the SVG
 - `project.yml` – XcodeGen project definition
 - `docs/icon.png` – gray icon used in this README
+
+## License
+
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Adrian Frydmański.
