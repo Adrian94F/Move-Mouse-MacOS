@@ -18,6 +18,7 @@ A small macOS menu bar app that smoothly moves the cursor while you are idle, so
 - Pauses while the screen is locked or another user is active (fast user switching).
 - Optional launch at login (`SMAppService`).
 - Settings persist between launches.
+- English UI by default; Polish when the system language is Polish. The language can also be chosen in Settings.
 
 ## Requirements
 

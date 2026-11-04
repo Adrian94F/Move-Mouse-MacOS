@@ -1,6 +1,7 @@
 name: MoveMouse
 options:
   bundleIdPrefix: com.local
+  developmentLanguage: en
   deploymentTarget:
     macOS: "14.0"
 targets:

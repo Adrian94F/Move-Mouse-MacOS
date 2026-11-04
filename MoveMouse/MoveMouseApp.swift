@@ -20,12 +20,23 @@ final class Settings: ObservableObject {
     @Published var useSchedule: Bool { didSet { d.set(useSchedule, forKey: "useSchedule") } }
     @Published var days: [DaySchedule] { didSet { d.set(try? JSONEncoder().encode(days), forKey: "days") } }
     @Published var launchAtLogin: Bool
+    @Published var language: String { didSet { d.set(language, forKey: "language") } }
+
+    // "system" follows the system language; supported: en, pl (English is the fallback).
+    var languageCode: String {
+        language == "system" ? (Bundle.main.preferredLocalizations.first ?? "en") : language
+    }
+    func tr(_ key: String, _ args: CVarArg...) -> String {
+        let b = Bundle.main.path(forResource: languageCode, ofType: "lproj").flatMap(Bundle.init(path:)) ?? Bundle.main
+        return String(format: b.localizedString(forKey: key, value: key, table: nil), arguments: args)
+    }
 
     init() {
         d.register(defaults: ["enabled": true, "interval": 30.0, "maxDistance": 50.0, "idleThreshold": 60.0, "useSchedule": false])
         enabled = d.bool(forKey: "enabled")
         interval = d.double(forKey: "interval")
         maxDistance = d.double(forKey: "maxDistance")
+        language = d.string(forKey: "language") ?? "system"
         idleThreshold = d.double(forKey: "idleThreshold")
         useSchedule = d.bool(forKey: "useSchedule")
         if let data = d.data(forKey: "days"), let v = try? JSONDecoder().decode([DaySchedule].self, from: data) { days = v }
@@ -141,7 +152,7 @@ final class Mover: ObservableObject {
     }
 }
 
-let dayNames = [1: "Niedziela", 2: "Poniedziałek", 3: "Wtorek", 4: "Środa", 5: "Czwartek", 6: "Piątek", 7: "Sobota"]
+let dayNames: [Int: LocalizedStringKey] = [1: "Sunday", 2: "Monday", 3: "Tuesday", 4: "Wednesday", 5: "Thursday", 6: "Friday", 7: "Saturday"]
 
 struct TimeField: View {
     @Binding var minutes: Int
@@ -153,33 +164,89 @@ struct TimeField: View {
     }
 }
 
+enum Tab: CaseIterable {
+    case start, settings, schedule, info
+    var icon: String {
+        switch self {
+        case .start: return "computermouse"
+        case .settings: return "gearshape"
+        case .schedule: return "calendar"
+        case .info: return "info.circle"
+        }
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var s: Settings
     @ObservedObject var m: Mover
+    @State private var tab = Tab.start
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Włączony", isOn: $s.enabled).toggleStyle(.switch)
-                    Text(statusText).font(.caption).foregroundStyle(.secondary)
+        VStack(spacing: 14) {
+            HStack(spacing: 6) {
+                ForEach(Tab.allCases, id: \.self) { t in
+                    Button { tab = t } label: {
+                        Image(systemName: t.icon)
+                            .font(.system(size: 22))
+                            .frame(maxWidth: .infinity, minHeight: 38)
+                            .background(tab == t ? Color.accentColor.opacity(0.25) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(tab == t ? Color.accentColor : Color.secondary)
                 }
-                Spacer()
-                Image("Rat").resizable().scaledToFit().frame(width: 56, height: 56)
-                    .foregroundStyle(s.enabled ? Color.accentColor : Color.secondary)
             }
+            Group {
+                switch tab {
+                case .start: startView
+                case .settings: settingsView
+                case .schedule: scheduleView
+                case .info: infoView
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+        }
+        .padding(12).frame(width: 390)
+        .environment(\.locale, Locale(identifier: s.languageCode)).fixedSize(horizontal: false, vertical: true)
+    }
+
+    var startView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Toggle(LocalizedStringKey(s.enabled ? "Enabled" : "Disabled"), isOn: $s.enabled).toggleStyle(.switch)
+            Text(statusText).font(.caption).foregroundStyle(.secondary)
             if !m.trusted {
-                Button("Przyznaj dostęp do Uniwersalnego dostępu…") { m.requestAccess() }
-                Text("Wymagane do poruszania kursorem.").font(.caption).foregroundStyle(.red)
+                Button("Grant Accessibility access…") { m.requestAccess() }
+                Text("Required to move the cursor.").font(.caption).foregroundStyle(.red)
+            }
+            Image("Rat").resizable().scaledToFit().frame(width: 200, height: 200)
+                .foregroundStyle(s.enabled ? Color.accentColor : Color.secondary)
+                .padding(.vertical, 10).frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture { s.enabled.toggle() }
+        }
+    }
+
+    var settingsView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Stepper("Move every: \(Int(s.interval)) s", value: $s.interval, in: 1...3600, step: s.interval >= 60 ? 10 : 5)
+            Stepper("After idle: \(Int(s.idleThreshold)) s", value: $s.idleThreshold, in: 1...7200, step: s.idleThreshold >= 60 ? 30 : 5)
+            Stepper("Max distance: \(Int(s.maxDistance)) px", value: $s.maxDistance, in: 1...1000, step: 5)
+            Picker("Language", selection: $s.language) {
+                Text("System").tag("system")
+                Text("English").tag("en")
+                Text("Polski").tag("pl")
             }
             Divider()
-            Stepper("Ruch co: \(Int(s.interval)) s", value: $s.interval, in: 1...3600, step: s.interval >= 60 ? 10 : 5)
-            Stepper("Po bezczynności: \(Int(s.idleThreshold)) s", value: $s.idleThreshold, in: 1...7200, step: s.idleThreshold >= 60 ? 30 : 5)
-            Stepper("Maks. odległość: \(Int(s.maxDistance)) px", value: $s.maxDistance, in: 1...1000, step: 5)
+            Toggle("Launch at login", isOn: Binding(get: { s.launchAtLogin }, set: { s.setLaunchAtLogin($0) }))
             Divider()
-            Toggle("Używaj harmonogramu", isOn: $s.useSchedule)
-            if s.useSchedule {
-                VStack(alignment: .leading, spacing: 12) {
+            Button("Quit") { NSApp.terminate(nil) }
+        }
+    }
+
+    var scheduleView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("Use schedule", isOn: $s.useSchedule)
+            VStack(alignment: .leading, spacing: 12) {
                 ForEach([2, 3, 4, 5, 6, 7, 1], id: \.self) { wd in
                     let i = s.days.firstIndex { $0.id == wd }!
                     let day = s.days[i]
@@ -191,20 +258,38 @@ struct ContentView: View {
                         TimeField(minutes: $s.days[i].endMinutes).disabled(!day.enabled)
                     }
                 }
-                }
-                .padding(.leading, 22)
             }
-            Divider()
-            Toggle("Uruchamiaj przy logowaniu", isOn: Binding(get: { s.launchAtLogin }, set: { s.setLaunchAtLogin($0) }))
-            Button("Zakończ") { NSApp.terminate(nil) }
+            .padding(.leading, 22)
+            .disabled(!s.useSchedule).opacity(s.useSchedule ? 1 : 0.5)
         }
-        .padding(20).frame(width: 390)
+    }
+
+    var infoView: some View {
+        VStack(spacing: 10) {
+            Text("Move Mouse").font(.title2.bold())
+            Image("Rat").resizable().scaledToFit().frame(width: 110, height: 110)
+                .foregroundStyle(.white).shadow(color: .black.opacity(0.35), radius: 2)
+            Text("A menu bar app that smoothly moves the cursor while you are idle, so other programs see your activity.")
+                .font(.callout).multilineTextAlignment(.center).foregroundStyle(.secondary)
+            Text("Author: Adrian Frydmański").font(.callout)
+            HStack(spacing: 8) {
+                Link("Repository", destination: URL(string: "https://github.com/Adrian94F/Move-Mouse-MacOS")!)
+                Text("|").foregroundStyle(.tertiary)
+                Link("License", destination: URL(string: "https://github.com/Adrian94F/Move-Mouse-MacOS/blob/master/LICENSE")!)
+                Text("|").foregroundStyle(.tertiary)
+                Link("frydmanski.cc", destination: URL(string: "https://frydmanski.cc")!)
+            }
+            .font(.callout)
+            .padding(.top, 6)
+        }
     }
 
     var statusText: String {
-        if !s.enabled { return "Wstrzymany" }
-        if !s.inSchedule() { return "Poza harmonogramem" }
-        return "Aktywny" + (m.lastMove.map { " · ostatni ruch " + $0.formatted(date: .omitted, time: .standard) } ?? "")
+        if !s.enabled { return s.tr("Paused") }
+        if !s.inSchedule() { return s.tr("Outside schedule") }
+        let base = s.tr("Active")
+        guard let t = m.lastMove else { return base }
+        return base + " · " + s.tr("last move %@", t.formatted(date: .omitted, time: .standard))
     }
 }
 
