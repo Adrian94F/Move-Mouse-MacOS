@@ -4,50 +4,50 @@
 
 # MoveMouse
 
-Mała aplikacja dla macOS działająca wyłącznie w pasku menu. Gdy użytkownik jest bezczynny, płynnie porusza kursorem, żeby inne programy widziały aktywność (odpowiednik Move Mouse z Windowsa).
+A small macOS menu bar app that smoothly moves the cursor while you are idle, so other programs see user activity (the macOS counterpart of Move Mouse on Windows).
 
-## Funkcje
+## Features
 
-- Ikona tylko w pasku menu (bez ikony w Docku).
-- Ruch następuje **tylko po wykryciu bezczynności** użytkownika; próg jest konfigurowalny.
-- Losowy kierunek i losowa odległość (od 1 px do ustawionego maksimum), w granicach ekranów.
-- Płynna animacja ruchu (ease-in-out), przerywana, gdy użytkownik dotknie myszy.
-- Konfigurowalny odstęp między ruchami.
-- Harmonogram: osobne włączenie i godziny pracy dla każdego dnia tygodnia (tydzień od poniedziałku, przedziały przez północ działają).
-- Ikona w pasku menu zmienia kolor na zielony, gdy aplikacja faktycznie porusza myszą.
-- Opcjonalne uruchamianie przy logowaniu (`SMAppService`).
-- Ustawienia zapisywane między uruchomieniami.
+- Menu bar only (no Dock icon).
+- Moves the mouse **only when the user is idle**; the idle threshold is configurable.
+- Random direction and random distance (from 1 px up to a configurable maximum), kept within the screen bounds.
+- Smooth ease-in-out animation, aborted as soon as the user touches the mouse.
+- Configurable interval between movements.
+- Schedule: per-day enable switch and working hours (week starts on Monday; ranges crossing midnight are supported).
+- The menu bar icon turns green while the app is actually moving the mouse.
+- Optional launch at login (`SMAppService`).
+- Settings persist between launches.
 
-## Wymagania
+## Requirements
 
-- macOS 14 lub nowszy
-- Xcode (do zbudowania), opcjonalnie [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+- macOS 14 or later
+- Xcode to build; optionally [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 
-## Budowanie
+## Building
 
 ```sh
 open MoveMouse.xcodeproj
 ```
 
-albo z wiersza poleceń:
+or from the command line:
 
 ```sh
 xcodebuild -project MoveMouse.xcodeproj -scheme MoveMouse -configuration Release -derivedDataPath build build
 ```
 
-Aplikacja powstaje w `build/Build/Products/Release/MoveMouse.app`. Przed uruchomieniem z Xcode ustaw własny Team w *Signing & Capabilities*.
+The app is produced at `build/Build/Products/Release/MoveMouse.app`. Set your own Team in *Signing & Capabilities* before running from Xcode.
 
-Konfiguracja projektu jest w `project.yml`; po jej zmianie odtwórz projekt poleceniem `xcodegen generate`.
+Project configuration lives in `project.yml`; after changing it, regenerate the project with `xcodegen generate`.
 
-## Uprawnienia
+## Permissions
 
-Do poruszania kursorem potrzebne jest uprawnienie **Dostępność**: *Ustawienia systemowe → Prywatność i ochrona → Dostępność*. Aplikacja poprosi o nie z poziomu menu.
+Moving the cursor requires the **Accessibility** permission: *System Settings → Privacy & Security → Accessibility*. The app prompts for it from its menu.
 
-Autostart najlepiej włączać z aplikacji skopiowanej do `/Applications`.
+For launch at login, copy the app to `/Applications` first.
 
-## Struktura
+## Project layout
 
-- `MoveMouse/MoveMouseApp.swift` – cały kod aplikacji
-- `MoveMouse/Assets.xcassets` – ikona szczura (SVG)
-- `project.yml` – definicja projektu dla XcodeGen
-- `docs/icon.png` – szara ikona użyta w README
+- `MoveMouse/MoveMouseApp.swift` – the entire app
+- `MoveMouse/Assets.xcassets` – rat icon (SVG)
+- `project.yml` – XcodeGen project definition
+- `docs/icon.png` – gray icon used in this README
