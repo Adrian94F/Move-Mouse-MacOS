@@ -1,0 +1,23 @@
+name: MoveMouse
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    macOS: "14.0"
+targets:
+  MoveMouse:
+    type: application
+    platform: macOS
+    sources: [MoveMouse]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.MoveMouse
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_CFBundleDisplayName: MoveMouse
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
