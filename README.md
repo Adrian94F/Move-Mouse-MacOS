@@ -15,6 +15,7 @@ A small macOS menu bar app that smoothly moves the cursor while you are idle, so
 - Configurable interval between movements.
 - Schedule: per-day enable switch and working hours (week starts on Monday; ranges crossing midnight are supported).
 - The menu bar icon turns green while the app is actually moving the mouse.
+- Pauses while the screen is locked or another user is active (fast user switching).
 - Optional launch at login (`SMAppService`).
 - Settings persist between launches.
 

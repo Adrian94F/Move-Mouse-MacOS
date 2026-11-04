@@ -82,11 +82,19 @@ final class Mover: ObservableObject {
         trusted = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
     }
 
+    // False when another user is on the console (fast user switching) or the screen is locked.
+    private var sessionActive: Bool {
+        guard let d = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+        let onConsole = d["kCGSSessionOnConsoleKey"] as? Bool ?? false
+        let locked = d["CGSSessionScreenIsLocked"] as? Bool ?? false
+        return onConsole && !locked
+    }
+
     var active: Bool { settings.enabled && settings.inSchedule() }
 
     func tick() {
         trusted = AXIsProcessTrusted()
-        guard active, trusted else { running = false; return }
+        guard active, trusted, sessionActive else { running = false; return }
         let idle = userIdleSeconds()
         let nowRunning = idle >= settings.idleThreshold
         if running != nowRunning { running = nowRunning }
